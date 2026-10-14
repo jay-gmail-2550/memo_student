@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학생 행동 누가기록장</title>
+
+  <!-- 파비콘 등록 -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
   <style>
     :root {
       --primary-color: #2b70c9;
@@ -107,7 +111,7 @@
       cursor: not-allowed;
     }
 
-    /* 알림 메시지 */
+    /* 알림 메시지 스타일 */
     .message {
       margin-top: 16px;
       padding: 12px;
@@ -153,12 +157,12 @@
   </div>
 
   <script>
-    // ⭐️ 여기에 구글 앱스 스크립트 배포 URL을 입력하세요!
+    // ⭐️ 구글 앱스 스크립트 배포 후 얻은 웹 앱 URL을 여기에 붙여넣어 주세요!
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyBugfzbMOQ3F-SVkCqXnWOaw3zxLc9fUghgG-ZypwzFQFQ5WRrMFmjhh_r2SmNYv6H_w/exec";
 
     let studentDataList = [];
 
-    // 페이지 진입 시 학생 목록 로드
+    // 화면이 켜지면 학생 목록 불러오기 (GET)
     window.onload = async function() {
       const selectBox = document.getElementById('studentSelect');
       
@@ -186,7 +190,7 @@
       }
     };
 
-    // 기록 저장 요청 함수
+    // 기록 저장하기 (POST)
     async function submitRecord() {
       const selectBox = document.getElementById('studentSelect');
       const recordInput = document.getElementById('recordInput');
@@ -214,12 +218,11 @@
         record: recordText
       };
 
-      // 버튼 비활성화 (중복 클릭 방지)
+      // 중복 클릭 방지
       saveBtn.disabled = true;
       saveBtn.textContent = "저장 중...";
 
       try {
-        // GAS 웹앱 호출
         const response = await fetch(GAS_API_URL, {
           method: 'POST',
           body: JSON.stringify(payload)
@@ -229,7 +232,7 @@
 
         if (result.status === 'success') {
           showMessage(`[${selectedStudent.name}] 학생의 기록이 저장되었습니다! 👏`, "success");
-          recordInput.value = ""; // 입력창 초기화
+          recordInput.value = ""; // 텍스트 입력창 초기화
         } else {
           showMessage("저장에 실패했습니다. 다시 시도해 주세요.", "error");
         }
@@ -242,7 +245,7 @@
       }
     }
 
-    // 알림 메시지 표시 함수
+    // 결과 안내 메시지 띄우기
     function showMessage(msg, type) {
       const alertBox = document.getElementById('alertBox');
       alertBox.textContent = msg;
