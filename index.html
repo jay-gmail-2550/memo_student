@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학생 행동 누가기록장</title>
+  <style>
+    :root {
+      --primary-color: #2b70c9;
+      --primary-hover: #1e569d;
+      --bg-color: #f4f6fa;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+      --border-color: #e1e4e8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 24px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #4b5563;
+    }
+
+    select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      outline: none;
+      transition: all 0.2s ease;
+      background-color: #fafbfc;
+    }
+
+    select:focus, textarea:focus {
+      border-color: var(--primary-color);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(43, 112, 201, 0.12);
+    }
+
+    textarea {
+      height: 140px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      background-color: var(--primary-color);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-submit:disabled {
+      background-color: #a5c2ea;
+      cursor: not-allowed;
+    }
+
+    /* 알림 메시지 */
+    .message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      text-align: center;
+      display: none;
+    }
+
+    .message.success {
+      background-color: #e6f4ea;
+      color: #137333;
+      border: 1px solid #ceead6;
+    }
+
+    .message.error {
+      background-color: #fce8e6;
+      color: #c5221f;
+      border: 1px solid #fad2cf;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>📝 학생 행동 누가기록</h1>
+
+    <div class="form-group">
+      <label for="studentSelect">학생 선택</label>
+      <select id="studentSelect">
+        <option value="">학생 목록을 불러오는 중...</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="recordInput">행동 특성 및 누가기록</label>
+      <textarea id="recordInput" placeholder="관찰한 학생의 행동 내용을 구체적으로 적어주세요."></textarea>
+    </div>
+
+    <button id="saveBtn" class="btn-submit" onclick="submitRecord()">저장하기</button>
+
+    <div id="alertBox" class="message"></div>
+  </div>
+
+  <script>
+    // ⭐️ 여기에 구글 앱스 스크립트 배포 URL을 입력하세요!
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyBugfzbMOQ3F-SVkCqXnWOaw3zxLc9fUghgG-ZypwzFQFQ5WRrMFmjhh_r2SmNYv6H_w/exec";
+
+    let studentDataList = [];
+
+    // 페이지 진입 시 학생 목록 로드
+    window.onload = async function() {
+      const selectBox = document.getElementById('studentSelect');
+      
+      try {
+        const response = await fetch(GAS_API_URL);
+        const result = await response.json();
+
+        if (result.status === 'success' && result.data.length > 0) {
+          studentDataList = result.data;
+          selectBox.innerHTML = '<option value="">-- 학생을 선택하세요 --</option>';
+          
+          result.data.forEach((student, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `${student.number}번 ${student.name}`;
+            selectBox.appendChild(option);
+          });
+        } else {
+          selectBox.innerHTML = '<option value="">학생 정보가 없습니다.</option>';
+        }
+      } catch (error) {
+        console.error(error);
+        selectBox.innerHTML = '<option value="">목록 로딩 실패 (URL을 확인하세요)</option>';
+        showMessage("학생 목록을 가져오지 못했습니다.", "error");
+      }
+    };
+
+    // 기록 저장 요청 함수
+    async function submitRecord() {
+      const selectBox = document.getElementById('studentSelect');
+      const recordInput = document.getElementById('recordInput');
+      const saveBtn = document.getElementById('saveBtn');
+
+      const selectedIndex = selectBox.value;
+      const recordText = recordInput.value.trim();
+
+      if (selectedIndex === "") {
+        showMessage("학생을 선택해 주세요.", "error");
+        selectBox.focus();
+        return;
+      }
+
+      if (!recordText) {
+        showMessage("기록할 내용을 입력해 주세요.", "error");
+        recordInput.focus();
+        return;
+      }
+
+      const selectedStudent = studentDataList[selectedIndex];
+      const payload = {
+        number: selectedStudent.number,
+        name: selectedStudent.name,
+        record: recordText
+      };
+
+      // 버튼 비활성화 (중복 클릭 방지)
+      saveBtn.disabled = true;
+      saveBtn.textContent = "저장 중...";
+
+      try {
+        // GAS 웹앱 호출
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          showMessage(`[${selectedStudent.name}] 학생의 기록이 저장되었습니다! 👏`, "success");
+          recordInput.value = ""; // 입력창 초기화
+        } else {
+          showMessage("저장에 실패했습니다. 다시 시도해 주세요.", "error");
+        }
+      } catch (error) {
+        console.error(error);
+        showMessage("통신 중 오류가 발생했습니다.", "error");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "저장하기";
+      }
+    }
+
+    // 알림 메시지 표시 함수
+    function showMessage(msg, type) {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.textContent = msg;
+      alertBox.className = `message ${type}`;
+      alertBox.style.display = 'block';
+
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
